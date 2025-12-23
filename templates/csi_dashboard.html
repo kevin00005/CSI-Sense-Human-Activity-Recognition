@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSI Activity Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card h2 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 i {
+            font-size: 1.8rem;
+        }
+        
+        .activity-display {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .activity-name {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .confidence {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        
+        .confidence-bar {
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .confidence-level {
+            height: 100%;
+            background: linear-gradient(90deg, #00b09b, #96c93d);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-dot.connected {
+            background: #4CAF50;
+        }
+        
+        .status-dot.connecting {
+            background: #ff9800;
+        }
+        
+        .status-dot.disconnected {
+            background: #f44336;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .history-container {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+        
+        .history-activity {
+            font-weight: bold;
+        }
+        
+        .history-confidence {
+            color: #96c93d;
+        }
+        
+        .history-time {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .activity-icons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .activity-icon {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+        
+        .activity-icon.active {
+            background: rgba(255, 255, 255, 0.2);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .activity-icon i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .connection-status {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Include Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CSI Activity Detection</h1>
+            <p class="subtitle">Real-time human activity recognition using Channel State Information</p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fas fa-running"></i> Current Activity</h2>
+                <div class="activity-display">
+                    <div class="activity-name" id="current-activity">No Activity</div>
+                    <div class="confidence" id="confidence-text">Confidence: 0%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-level" id="confidence-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot disconnected" id="status-dot"></div>
+                        <span id="status-text">Connecting to CSI server...</span>
+                    </div>
+                </div>
+                
+                <div class="activity-icons">
+                    <div class="activity-icon" id="icon-walking">
+                        <i class="fas fa-walking"></i>
+                        <div>Walking</div>
+                    </div>
+                    <div class="activity-icon" id="icon-running">
+                        <i class="fas fa-running"></i>
+                        <div>Running</div>
+                    </div>
+                    <div class="activity-icon" id="icon-sitting">
+                        <i class="fas fa-chair"></i>
+                        <div>Sitting</div>
+                    </div>
+                    <div class="activity-icon" id="icon-standing">
+                        <i class="fas fa-male"></i>
+                        <div>Standing</div>
+                    </div>
+                </div>
+                
+                <div class="connection-status">
+                    <span id="connection-status">Not connected to CSI server</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-history"></i> Activity History</h2>
+                <div class="history-container" id="history-container">
+                    <!-- History items will be added here by JavaScript -->
+                    <div class="history-item">
+                        <div>
+                            <div class="history-activity">No activity detected yet</div>
+                            <div class="history-time">--:--:--</div>
+                        </div>
+                        <div class="history-confidence">0%</div>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-detections">0</div>
+                        <div class="stat-label">Total Detections</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="current-streak">0</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avg-confidence">0%</div>
+                        <div class="stat-label">Avg Confidence</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>CSI Activity Detection System &copy; 2023 | Real-time monitoring</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM elements
+        const currentActivityElement = document.getElementById('current-activity');
+        const confidenceTextElement = document.getElementById('confidence-text');
+        const confidenceBarElement = document.getElementById('confidence-bar');
+        const statusTextElement = document.getElementById('status-text');
+        const statusDotElement = document.getElementById('status-dot');
+        const historyContainer = document.getElementById('history-container');
+        const totalDetectionsElement = document.getElementById('total-detections');
+        const currentStreakElement = document.getElementById('current-streak');
+        const avgConfidenceElement = document.getElementById('avg-confidence');
+        const connectionStatusElement = document.getElementById('connection-status');
+        
+        // Activity icons
+        const activityIcons = {
+            'walking': document.getElementById('icon-walking'),
+            'running': document.getElementById('icon-running'),
+            'sitting': document.getElementById('icon-sitting'),
+            'standing': document.getElementById('icon-standing')
+        };
+        
+        // Application state
+        let activityHistory = [];
+        let totalDetections = 0;
+        let currentStreak = 0;
+        let lastActivity = null;
+        let totalConfidence = 0;
+        
+        // Function to update the UI with new activity data
+        function updateActivity(activity, confidence) {
+            // Update current activity display
+            currentActivityElement.textContent = activity;
+            const confidencePercent = Math.round(confidence * 100);
+            confidenceTextElement.textContent = `Confidence: ${confidencePercent}%`;
+            confidenceBarElement.style.width = `${confidencePercent}%`;
+            
+            // Update status
+            statusTextElement.textContent = "Activity detected";
+            
+            // Update activity icons
+            Object.values(activityIcons).forEach(icon => {
+                if (icon) icon.classList.remove('active');
+            });
+            if (activityIcons[activity.toLowerCase()]) {
+                activityIcons[activity.toLowerCase()].classList.add('active');
+            }
+            
+            // Add to history
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            const historyItem = {
+                activity: activity,
+                confidence: confidencePercent,
+                time: timeString,
+                timestamp: now.getTime()
+            };
+            
+            activityHistory.unshift(historyItem);
+            
+            // Keep only last 10 items in history
+            if (activityHistory.length > 10) {
+                activityHistory = activityHistory.slice(0, 10);
+            }
+            
+            // Update history display
+            updateHistoryDisplay();
+            
+            // Update stats
+            updateStats(activity, confidencePercent);
+        }
+        
+        // Function to update the history display
+        function updateHistoryDisplay() {
+            historyContainer.innerHTML = '';
+            
+            if (activityHistory.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="history-item">
+                        <div>
+                            <div class="history-activity">No activity detected yet</div>
+                            <div class="history-time">--:--:--</div>
+                        </div>
+                        <div class="history-confidence">0%</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            activityHistory.forEach(item => {
+                const historyItemElement = document.createElement('div');
+                historyItemElement.className = 'history-item';
+                historyItemElement.innerHTML = `
+                    <div>
+                        <div class="history-activity">${item.activity}</div>
+                        <div class="history-time">${item.time}</div>
+                    </div>
+                    <div class="history-confidence">${item.confidence}%</div>
+                `;
+                historyContainer.appendChild(historyItemElement);
+            });
+        }
+        
+        // Function to update statistics
+        function updateStats(activity, confidence) {
+            totalDetections++;
+            totalConfidence += confidence;
+            
+            // Update streak
+            if (activity === lastActivity) {
+                currentStreak++;
+            } else {
+                currentStreak = 1;
+                lastActivity = activity;
+            }
+            
+            // Update UI
+            totalDetectionsElement.textContent = totalDetections;
+            currentStreakElement.textContent = currentStreak;
+            avgConfidenceElement.textContent = `${Math.round(totalConfidence / totalDetections)}%`;
+        }
+        
+        // Function to update connection status
+        function updateConnectionStatus(status, message) {
+            statusDotElement.className = 'status-dot ' + status;
+            connectionStatusElement.textContent = message;
+            
+            if (status === 'connected') {
+                statusTextElement.textContent = "Connected to CSI server";
+            } else if (status === 'connecting') {
+                statusTextElement.textContent = "Connecting to CSI server...";
+            } else {
+                statusTextElement.textContent = "Disconnected from CSI server";
+            }
+        }
+        
+        // Initialize the application
+        function init() {
+            // Connect to WebSocket server
+            const socket = io();
+            
+            // Update status when connecting
+            updateConnectionStatus('connecting', 'Connecting to CSI server...');
+            
+            // Listen for activity updates
+            socket.on('activity_update', function(data) {
+                updateActivity(data.activity, data.confidence);
+            });
+            
+            // Handle connection events
+            socket.on('connect', function() {
+                updateConnectionStatus('connected', 'Connected to CSI server');
+            });
+            
+            socket.on('disconnect', function() {
+                updateConnectionStatus('disconnected', 'Disconnected from CSI server');
+            });
+            
+            socket.on('connect_error', function(error) {
+                updateConnectionStatus('disconnected', 'Connection error: ' + error.message);
+            });
+            
+            // Initial update
+            updateHistoryDisplay();
+        }
+        
+        // Start the application when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
