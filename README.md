@@ -26,7 +26,8 @@ The system performs human activity recognition **without cameras or wearable sen
 ## 🏗 System Architecture
 The proposed system captures Wi-Fi CSI data between two ESP32 devices. Human movement alters the wireless propagation environment, which is reflected in CSI amplitude variations. These variations are processed and fed into a CNN model to classify activities.
 
-> *(System architecture diagram can be added here)*
+<img width="1536" height="1024" alt="ChatGPT Image Dec 24, 2025, 02_17_25 AM" src="https://github.com/user-attachments/assets/7d93acf0-7442-4a1f-9aff-aba60ca4338e" />
+
 
 ---
 
@@ -67,7 +68,8 @@ A **Convolutional Neural Network (CNN)** is employed to learn discriminative spa
 ### Confusion Matrix
 The confusion matrix is used to evaluate the classification performance across different human activities.
 
-> *(Confusion matrix image can be added here)*
+<img width="634" height="511" alt="image" src="https://github.com/user-attachments/assets/863ac7cb-a7a2-4917-b1d7-fe3964255c73" />
+
 
 ---
 
